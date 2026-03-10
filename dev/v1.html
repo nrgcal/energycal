@@ -1,1 +1,285 @@
 
+
+
+import { useState, useEffect, useRef } from “react”;
+import { Sun, Moon, Search, Calendar, Download, MapPin, Tag, ChevronRight, Zap, Globe, Bell, Flame, Sparkles } from “lucide-react”;
+
+const SAMPLE_EVENTS = [
+{ date: “Mar 18–22”, name: “CERAWEEK”, city: “Houston, TX”, segment: “General Energy”, price: “$$$”, sponsors: [“AWS”, “Chevron”, “ExxonMobil”] },
+{ date: “Apr 9–10”, name: “Hydrogen Europe”, city: “Amsterdam, NL”, segment: “Hydrogen”, price: “$$$”, sponsors: [“Everwind Fuels”] },
+{ date: “Apr 22–25”, name: “Offshore Wind IPF”, city: “Baltimore, MD”, segment: “Wind / Power”, price: “$$$”, sponsors: [] },
+{ date: “May 6–9”, name: “Offshore Technology Conference”, city: “Houston, TX”, segment: “Upstream Offshore”, price: “$$$”, sponsors: [] },
+{ date: “May 15–17”, name: “Super DUG”, city: “Fort Worth, TX”, segment: “Upstream / Midstream”, price: “$$$”, sponsors: [“Chevron”, “BP”, “ExxonMobil”] },
+];
+
+const FEATURES = [
+{ icon: Globe, label: “Global Coverage”, sub: “Oil, gas, renewables, power & cleantech worldwide” },
+{ icon: Bell, label: “Always Updated”, sub: “New events added weekly by energy insiders” },
+{ icon: Search, label: “Smart Search”, sub: “Natural language — no complex filters needed” },
+{ icon: Zap, label: “Built for Mobile”, sub: “Designed for pros on the go, anywhere” },
+];
+
+export default function EnergyCalendar() {
+const [dark, setDark] = useState(true);
+const [query, setQuery] = useState(“hydrogen conference”);
+const [focused, setFocused] = useState(false);
+const [visible, setVisible] = useState(false);
+const [activeResult, setActiveResult] = useState(null);
+const inputRef = useRef(null);
+
+useEffect(() => {
+const t = setTimeout(() => setVisible(true), 80);
+return () => clearTimeout(t);
+}, []);
+
+const bg = dark
+? “bg-[#0a0a0f] text-white”
+: “bg-[#f5f3ee] text-zinc-900”;
+
+const cardBg = dark
+? “bg-white/5 border-white/10 hover:bg-white/9”
+: “bg-white/80 border-zinc-200 hover:bg-white”;
+
+const pillBg = dark
+? “bg-zinc-950/80 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]”
+: “bg-white/80 border-zinc-200 shadow-[0_8px_32px_rgba(0,0,0,0.12)]”;
+
+const inputBg = dark
+? “bg-white/8 border-white/12 text-white placeholder-white/30 focus:border-amber-400/60”
+: “bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:border-amber-500”;
+
+const muted = dark ? “text-white/45” : “text-zinc-500”;
+const accent = “text-amber-400”;
+
+return (
+<div className={`min-h-screen transition-colors duration-300 ${bg} font-sans relative overflow-x-hidden`}
+style={{ fontFamily: “‘DM Sans’, ‘Outfit’, system-ui, sans-serif” }}>
+
+```
+  {/* Background atmospheric glow */}
+  <div className="pointer-events-none fixed inset-0 z-0">
+    <div className={`absolute top-[-18%] left-[30%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-[0.13] ${dark ? "bg-amber-400" : "bg-amber-300"}`} />
+    <div className={`absolute bottom-[-10%] right-[10%] w-[400px] h-[400px] rounded-full blur-[100px] opacity-[0.08] ${dark ? "bg-orange-500" : "bg-orange-200"}`} />
+    {dark && (
+      <div className="absolute inset-0 opacity-[0.025]"
+        style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+    )}
+  </div>
+
+  {/* ── TOOLBAR (v0.2 pill) ── */}
+  <div className="fixed top-5 left-0 right-0 z-50 flex justify-center px-4">
+    <div className={`flex items-center gap-5 px-5 h-12 rounded-3xl border backdrop-blur-md transition-all duration-200 ${pillBg}`}
+      style={{ WebkitBackdropFilter: "blur(16px)", backdropFilter: "blur(16px)" }}>
+
+      {/* Logo badge */}
+      <div className="group relative flex items-center justify-center w-8 h-8 rounded-xl cursor-pointer
+        ring-1 ring-amber-400/30 transition-all duration-200
+        hover:ring-amber-400 hover:shadow-[0_0_14px_rgba(251,191,36,0.45)] active:scale-95">
+        <span className={`text-sm font-bold tracking-tighter ${dark ? "text-white" : "text-zinc-900"}`}>EC</span>
+      </div>
+
+      <div className={`w-px h-5 ${dark ? "bg-white/10" : "bg-zinc-200"}`} />
+
+      {/* Nav icons */}
+      {[
+        { icon: Search, tip: "Search" },
+        { icon: Calendar, tip: "Browse" },
+        { icon: MapPin, tip: "Near Me" },
+        { icon: Bell, tip: "Alerts" },
+        { icon: Download, tip: "Export" },
+      ].map(({ icon: Icon, tip }) => (
+        <button key={tip} title={tip}
+          className={`transition-all duration-200 hover:scale-110 active:scale-95 hover:opacity-100 opacity-60 ${dark ? "text-white hover:text-amber-400" : "text-zinc-700 hover:text-amber-600"}`}>
+          <Icon size={17} strokeWidth={1.8} />
+        </button>
+      ))}
+
+      <div className={`w-px h-5 ${dark ? "bg-white/10" : "bg-zinc-200"}`} />
+
+      {/* Theme toggle */}
+      <button onClick={() => setDark(d => !d)}
+        className={`transition-all duration-200 hover:scale-110 active:scale-95 ${dark ? "text-amber-400 hover:text-amber-300" : "text-zinc-600 hover:text-amber-500"}`}>
+        {dark ? <Sun size={17} strokeWidth={1.8} /> : <Moon size={17} strokeWidth={1.8} />}
+      </button>
+    </div>
+  </div>
+
+  {/* ── HERO ── */}
+  <main className="relative z-10 flex flex-col items-center pt-36 pb-24 px-4">
+
+    {/* Badge */}
+    <div className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+      style={{ transitionDelay: "0ms" }}>
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full mb-8
+        ${dark ? "bg-amber-400/10 text-amber-400 border border-amber-400/20" : "bg-amber-50 text-amber-600 border border-amber-200"}`}>
+        <Flame size={11} />
+        1,000+ energy events worldwide
+      </span>
+    </div>
+
+    {/* Headline */}
+    <div className={`text-center transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "80ms" }}>
+      <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.08] mb-3"
+        style={{ fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif" }}>
+        Where Energy Pros
+      </h1>
+      <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.08] mb-6 text-amber-400"
+        style={{ fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif" }}>
+        Find Events.
+      </h1>
+      <p className={`text-base sm:text-lg max-w-sm mx-auto ${muted}`}>
+        Comprehensive. Easy to use. Curated by energy insiders.
+      </p>
+    </div>
+
+    {/* Search bar */}
+    <div className={`w-full max-w-lg mt-10 transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "160ms" }}>
+      <div className={`relative group rounded-2xl border transition-all duration-200 ${focused ? "shadow-[0_0_0_3px_rgba(251,191,36,0.18)]" : ""} ${inputBg}`}>
+        <Search size={17} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${focused ? "text-amber-400" : muted}`} strokeWidth={2} />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder="hydrogen conference, Houston..."
+          className={`w-full bg-transparent pl-10 pr-4 py-3.5 text-sm rounded-2xl border-0 outline-none`}
+        />
+      </div>
+      <p className={`text-xs text-center mt-3 ${muted}`}>
+        <span className="text-amber-400 cursor-pointer hover:underline">Sign in</span> or Sign up to search 1,000+ energy events
+      </p>
+    </div>
+
+    {/* ── Results preview ── */}
+    <div className={`w-full max-w-lg mt-8 space-y-2 transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "240ms" }}>
+      {SAMPLE_EVENTS.map((ev, i) => (
+        <div key={i}
+          onMouseEnter={() => setActiveResult(i)}
+          onMouseLeave={() => setActiveResult(null)}
+          className={`relative flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 cursor-pointer
+            ${cardBg}
+            ${activeResult === i ? "scale-[1.015] shadow-lg" : ""}
+          `}
+          style={{
+            transitionDelay: `${i * 30}ms`,
+            boxShadow: activeResult === i
+              ? dark ? "0 4px 24px rgba(251,191,36,0.08)" : "0 4px 24px rgba(0,0,0,0.08)"
+              : undefined
+          }}>
+
+          {/* Date badge */}
+          <div className={`flex-shrink-0 text-center min-w-[52px] px-1.5 py-1.5 rounded-lg
+            ${dark ? "bg-amber-400/10 text-amber-400" : "bg-amber-50 text-amber-600"}`}>
+            <div className="text-[9px] font-semibold uppercase tracking-widest leading-none mb-0.5 opacity-70">
+              {ev.date.split("–")[0].split(" ")[0]}
+            </div>
+            <div className="text-sm font-bold leading-none">
+              {ev.date.replace(/[A-Za-z]+\s/, "").split("–")[0]}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold truncate">{ev.name}</span>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md
+                ${dark ? "bg-white/8 text-white/50" : "bg-zinc-100 text-zinc-500"}`}>
+                {ev.price}
+              </span>
+            </div>
+            <div className={`flex items-center gap-1 mt-0.5 text-xs ${muted}`}>
+              <MapPin size={10} />
+              <span>{ev.city}</span>
+              <span className="mx-1 opacity-40">·</span>
+              <Tag size={10} />
+              <span>{ev.segment}</span>
+            </div>
+          </div>
+
+          <ChevronRight size={14} className={`flex-shrink-0 transition-all duration-200 ${activeResult === i ? "text-amber-400 translate-x-0.5" : muted}`} />
+        </div>
+      ))}
+
+      <p className={`text-xs text-center pt-1 ${muted}`}>
+        Showing 5 of 1,000+ events · <span className="text-amber-400 cursor-pointer hover:underline">View all results</span>
+      </p>
+    </div>
+
+    {/* ── How it works ── */}
+    <div className={`w-full max-w-lg mt-20 transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "360ms" }}>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-center mb-6 text-amber-400">
+        Find Energy Events Fast
+      </h2>
+      <div className="space-y-3">
+        {[
+          { icon: Search, label: "Search", desc: 'Natural language like "hydrogen conference in Houston"' },
+          { icon: Calendar, label: "View Details", desc: "See venue, dates, pricing, and direct registration links" },
+          { icon: Download, label: "Export", desc: "Add to Google Calendar or download .ics for Outlook/Apple" },
+        ].map(({ icon: Icon, label, desc }, i) => (
+          <div key={i}
+            className={`flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 hover:scale-[1.01] ${cardBg}`}>
+            <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
+              ${dark ? "bg-amber-400/12 text-amber-400" : "bg-amber-50 text-amber-600"}`}>
+              <Icon size={16} strokeWidth={1.8} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold mb-0.5">{label}</div>
+              <div className={`text-xs leading-relaxed ${muted}`}>{desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* ── Why EnergyCalendar ── */}
+    <div className={`w-full max-w-lg mt-20 transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "440ms" }}>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-center mb-6 text-amber-400">
+        Why EnergyCalendar?
+      </h2>
+      <div className="grid grid-cols-2 gap-3">
+        {FEATURES.map(({ icon: Icon, label, sub }, i) => (
+          <div key={i}
+            className={`p-4 rounded-xl border transition-all duration-200 hover:scale-[1.02] ${cardBg}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3
+              ${dark ? "bg-amber-400/12 text-amber-400" : "bg-amber-50 text-amber-600"}`}>
+              <Icon size={15} strokeWidth={1.8} />
+            </div>
+            <div className="text-sm font-semibold mb-1">{label}</div>
+            <div className={`text-xs leading-relaxed ${muted}`}>{sub}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* ── CTA ── */}
+    <div className={`mt-20 text-center transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      style={{ transitionDelay: "520ms" }}>
+      <button className="group inline-flex items-center gap-2 bg-amber-400 text-zinc-900 font-semibold text-sm
+        px-7 py-3.5 rounded-2xl hover:bg-amber-300 active:scale-95 transition-all duration-200 shadow-[0_0_28px_rgba(251,191,36,0.3)]">
+        <Sparkles size={15} />
+        Get Started Free
+        <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+      </button>
+      <p className={`text-xs mt-3 ${muted}`}>No credit card required</p>
+    </div>
+
+    {/* ── Footer ── */}
+    <footer className={`mt-24 text-center text-xs ${muted}`}>
+      <div className="flex items-center justify-center gap-5 mb-3">
+        {["LinkedIn", "X", "Instagram", "Facebook", "TikTok"].map(s => (
+          <span key={s} className="hover:text-amber-400 cursor-pointer transition-colors">{s}</span>
+        ))}
+      </div>
+      <p>© 2026 EnergyCalendar.com · Houston, TX</p>
+    </footer>
+  </main>
+</div>
+```
+
+);
+}
