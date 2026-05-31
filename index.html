@@ -1,26 +1,666 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Energy Calendar</title>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background:#0f172a;
-      color:white;
-      text-align:center;
-      padding-top:100px;
-    }
-    h1 {font-size:48px;}
-    p {font-size:20px; color:#94a3b8;}
-  </style>
-</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EnergyCalendar</title>
+<meta name="description" content="EnergyCalendar brings temporal structure to electricity data. Currently in private access.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #f9f9f8;
+    --surface: #ffffff;
+    --border:  #e4e4e0;
+    --ink:     #18181b;
+    --mid:     #52525b;
+    --dim:     #a1a1aa;
+    --accent:  #1d4ed8;
+    --accent-s:#eff6ff;
+    --green:   #059669;
+    --mono:    'Geist Mono', monospace;
+    --sans:    'Geist', sans-serif;
+    --r:       8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
 
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(249,249,248,0.9);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 58px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 9px;
+    font-weight: 600; font-size: 15px;
+    letter-spacing: -0.3px; color: var(--ink);
+    text-decoration: none;
+  }
+  .logo-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--ink); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .logo-mark svg { width: 16px; height: 16px; }
+  .nav-status {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--dim); display: flex; align-items: center; gap: 7px;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 2px rgba(5,150,105,0.2);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 2px rgba(5,150,105,0.2); }
+    50%      { box-shadow: 0 0 0 5px rgba(5,150,105,0.08); }
+  }
+
+  /* HERO */
+  .hero {
+    padding: 96px 40px 80px;
+    max-width: 900px; margin: 0 auto;
+  }
+  .hero-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 14px 4px 8px;
+    font-size: 12px; color: var(--mid); margin-bottom: 40px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .chip-pip {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent-s); border: 1px solid #bfdbfe;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chip-pip svg { width: 10px; height: 10px; color: var(--accent); }
+
+  h1 {
+    font-size: clamp(38px, 7.5vw, 74px);
+    font-weight: 600; letter-spacing: -2.5px;
+    line-height: 1.04; color: var(--ink);
+    margin-bottom: 28px; max-width: 820px;
+  }
+  h1 .accent { color: var(--accent); }
+  .hero-body {
+    font-size: clamp(16px, 2vw, 18px); color: var(--mid);
+    max-width: 520px; line-height: 1.7;
+    font-weight: 300; margin-bottom: 0;
+  }
+  .hero-body strong { color: var(--ink); font-weight: 500; }
+
+  /* DIVIDER */
+  .divider {
+    border: none; border-top: 1px solid var(--border);
+    max-width: 100%; margin: 0;
+  }
+
+  /* MARQUEE STRIP */
+  .strip {
+    background: var(--ink); overflow: hidden;
+    padding: 14px 0; display: flex;
+    border-top: 1px solid #27272a;
+    border-bottom: 1px solid #27272a;
+  }
+  .strip-track {
+    display: flex; gap: 0; white-space: nowrap;
+    animation: marquee 34s linear infinite;
+    flex-shrink: 0;
+  }
+  .strip-track:hover { animation-play-state: paused; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .strip-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 28px;
+    font-family: var(--mono); font-size: 11.5px;
+    color: rgba(255,255,255,0.4);
+    border-right: 1px solid #27272a;
+    white-space: nowrap;
+  }
+  .strip-item .s-val {
+    color: rgba(255,255,255,0.85); font-weight: 500;
+  }
+  .strip-item .s-chg { font-size: 10px; }
+  .s-up   { color: #34d399; }
+  .s-down { color: #f87171; }
+
+  /* TWO-COL SECTIONS */
+  .two {
+    display: grid; grid-template-columns: 1fr 1fr;
+    max-width: 1080px; margin: 0 auto;
+    padding: 88px 40px; gap: 80px; align-items: center;
+  }
+  @media (max-width: 740px) { .two { grid-template-columns: 1fr; gap: 40px; padding: 56px 24px; } }
+  .two.flip { direction: rtl; }
+  .two.flip > * { direction: ltr; }
+
+  .kicker {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+  }
+  h2 {
+    font-size: clamp(22px, 3.2vw, 32px); font-weight: 600;
+    letter-spacing: -0.8px; line-height: 1.22;
+    margin-bottom: 18px;
+  }
+  .body-copy {
+    font-size: 14.5px; color: var(--mid);
+    line-height: 1.78; font-weight: 300;
+  }
+  .body-copy strong { color: var(--ink); font-weight: 500; }
+  .body-copy p + p { margin-top: 14px; }
+
+  /* PANEL CARD (mock UI) */
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .panel-bar {
+    background: #f3f4f6; border-bottom: 1px solid var(--border);
+    padding: 9px 14px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .p-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .panel-title {
+    font-family: var(--mono); font-size: 10.5px; color: var(--dim);
+    margin-left: 4px; letter-spacing: 0.3px;
+  }
+  .panel-body { padding: 20px; }
+
+  /* MINI CALENDAR GRID */
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 3px; margin-bottom: 16px;
+  }
+  .cal-hdr {
+    font-family: var(--mono); font-size: 9px; color: var(--dim);
+    text-align: center; padding: 3px 0; text-transform: uppercase;
+  }
+  .cal-cell {
+    aspect-ratio: 1; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 10px; color: var(--mid);
+    position: relative; cursor: default;
+  }
+  .cal-cell.empty { opacity: 0; }
+  .cal-cell.has-data { background: var(--accent-s); color: var(--accent); font-weight: 500; }
+  .cal-cell.high    { background: #dbeafe; }
+  .cal-cell.peak    { background: var(--accent); color: #fff; font-weight: 600; }
+  .cal-cell.today   { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .cal-legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .leg-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10.5px; color: var(--dim); font-family: var(--mono);
+  }
+  .leg-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* MINI CHART */
+  .mini-chart { position: relative; height: 90px; margin-bottom: 14px; }
+  .mini-chart svg { width: 100%; height: 100%; overflow: visible; }
+  .chart-labels {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9.5px; color: var(--dim);
+  }
+
+  /* METRIC LIST */
+  .metric-list { display: flex; flex-direction: column; gap: 10px; }
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 10px 14px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px;
+  }
+  .metric-lbl { font-size: 12px; color: var(--mid); }
+  .metric-val { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--ink); }
+  .metric-chg { font-family: var(--mono); font-size: 10.5px; }
+
+  /* DARK SECTION */
+  .dark-section {
+    background: var(--ink); padding: 88px 40px;
+  }
+  .dark-inner {
+    max-width: 1080px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 2fr;
+    gap: 60px; align-items: start;
+  }
+  @media (max-width: 740px) { .dark-inner { grid-template-columns: 1fr; gap: 36px; } }
+  .dark-section .kicker { color: #60a5fa; }
+  .dark-section h2 { color: #fff; }
+  .dark-section .body-copy { color: #71717a; }
+  .dark-section .body-copy strong { color: #a1a1aa; }
+  .pill-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  @media (max-width: 480px) { .pill-grid { grid-template-columns: 1fr; } }
+  .dk-card {
+    background: #27272a; border: 1px solid #3f3f46;
+    border-radius: var(--r); padding: 20px 18px;
+    transition: background 0.15s;
+  }
+  .dk-card:hover { background: #2d2d30; }
+  .dk-card-n {
+    font-family: var(--mono); font-size: 22px; font-weight: 500;
+    color: #fff; letter-spacing: -0.8px; line-height: 1;
+    margin-bottom: 6px;
+  }
+  .dk-card-l { font-size: 12px; color: #71717a; line-height: 1.5; }
+
+  /* SECTORS */
+  .sectors {
+    max-width: 1080px; margin: 0 auto; padding: 88px 40px;
+  }
+  .sectors h2 { margin-bottom: 12px; }
+  .sectors-sub {
+    font-size: 15px; color: var(--mid); max-width: 460px;
+    margin-bottom: 44px; line-height: 1.7; font-weight: 300;
+  }
+  .sector-list { display: flex; flex-direction: column; gap: 0; }
+  .sector-row {
+    display: flex; align-items: flex-start; gap: 24px;
+    padding: 28px 0; border-bottom: 1px solid var(--border);
+  }
+  .sector-row:first-child { border-top: 1px solid var(--border); }
+  .sector-n {
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    width: 28px; flex-shrink: 0; padding-top: 2px;
+  }
+  .sector-body { flex: 1; }
+  .sector-body h3 {
+    font-size: 15px; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.3px; margin-bottom: 6px;
+  }
+  .sector-body p { font-size: 13.5px; color: var(--mid); line-height: 1.65; }
+  .sector-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 10px;
+  }
+  .sector-tag {
+    font-family: var(--mono); font-size: 10.5px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 8px; color: var(--dim);
+  }
+
+  /* CLOSING */
+  .closing {
+    border-top: 1px solid var(--border);
+    padding: 100px 40px;
+    text-align: center;
+  }
+  .closing h2 {
+    font-size: clamp(28px, 5vw, 52px); letter-spacing: -1.5px;
+    margin-bottom: 16px; max-width: 580px; margin-left: auto; margin-right: auto;
+  }
+  .closing p {
+    font-size: 15px; color: var(--mid); max-width: 400px;
+    margin: 0 auto; line-height: 1.7; font-weight: 300;
+  }
+  .closing-meta {
+    margin-top: 48px; display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+  }
+  .closing-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 18px;
+    font-size: 13px; color: var(--mid);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .closing-badge .b-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+  }
+  .closing-note {
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 28px 40px;
+    display: flex; flex-wrap: wrap; gap: 12px;
+    justify-content: space-between; align-items: center;
+  }
+  .footer-l { font-size: 12.5px; color: var(--dim); }
+  .footer-r { display: flex; gap: 24px; }
+  .footer-r a { font-size: 12.5px; color: var(--dim); text-decoration: none; }
+  .footer-r a:hover { color: var(--mid); }
+
+  @media (max-width: 600px) {
+    nav { padding: 0 20px; }
+    .hero, .sectors, .closing { padding-left: 20px; padding-right: 20px; }
+    .dark-section { padding-left: 20px; padding-right: 20px; }
+    footer { padding: 24px 20px; }
+  }
+</style>
+</head>
 <body>
 
-<h1>EnergyCalendar.com</h1>
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.6">
+        <rect x="1.5" y="2.5" width="13" height="12" rx="1.8"/>
+        <path d="M5 2.5V1M11 2.5V1M1.5 6.5h13"/>
+        <rect x="4" y="9" width="2" height="2" rx="0.4" fill="#fff" stroke="none"/>
+        <rect x="10" y="9" width="2" height="2" rx="0.4" fill="#fff" stroke="none"/>
+        <rect x="7" y="9" width="2" height="2" rx="0.4" fill="none" stroke="#fff" stroke-width="1.2"/>
+      </svg>
+    </div>
+    EnergyCalendar
+  </a>
+  <div class="nav-status">
+    <span class="status-dot"></span>
+    Private access · Houston &amp; San Francisco
+  </div>
+</nav>
 
-<p>Launching soon.</p>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-chip">
+    <div class="chip-pip">
+      <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4">
+        <polyline points="1,7 3.5,4 5.5,5.5 8,2"/>
+      </svg>
+    </div>
+    Electricity data with a time dimension
+  </div>
+  <h1>Your electricity,<br>on a <span class="accent">calendar</span></h1>
+  <p class="hero-body">Electricity is consumed in time. It is billed in time. It is planned, modeled, and optimized across time. <strong>EnergyCalendar</strong> is the layer that brings those dimensions together — giving electricity data the temporal structure it has always lacked.</p>
+</section>
 
+<hr class="divider">
+
+<!-- MARQUEE: live-looking electricity metrics -->
+<div class="strip">
+  <div class="strip-track" id="track"></div>
+</div>
+
+<!-- SECTION 1: The Calendar -->
+<div class="two">
+  <div>
+    <div class="kicker">The Calendar</div>
+    <h2>Electricity consumption has a shape. We make it visible.</h2>
+    <div class="body-copy">
+      <p>Every kilowatt-hour lands somewhere on the calendar. Peak demand falls on specific days. Billing cycles close on specific dates. Rate structures shift with the season, the hour, the grid condition.</p>
+      <p>EnergyCalendar turns this into a navigable structure — so teams can see <strong>what happened, when</strong>, understand <strong>why costs moved</strong>, and plan around <strong>what's coming</strong>.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-bar">
+      <div class="p-dot" style="background:#ff5f57"></div>
+      <div class="p-dot" style="background:#febc2e"></div>
+      <div class="p-dot" style="background:#28c840"></div>
+      <span class="panel-title">consumption calendar · may 2025</span>
+    </div>
+    <div class="panel-body">
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--accent)"></div>Demand peak</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#dbeafe"></div>High load</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--accent-s)"></div>Elevated</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--border)"></div>Baseline</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: Interval Intelligence -->
+<div class="two flip">
+  <div>
+    <div class="kicker">Interval Intelligence</div>
+    <h2>15-minute data that actually tells a story</h2>
+    <div class="body-copy">
+      <p>Interval meters produce enormous volumes of data. Most organizations store it. Few can reason about it across billing periods, seasons, or year-over-year cycles.</p>
+      <p>EnergyCalendar structures interval data around <strong>the calendar unit that matters</strong> — the billing period, the rate season, the demand window — making patterns legible and actionable at any time horizon.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-bar">
+      <div class="p-dot" style="background:#ff5f57"></div>
+      <div class="p-dot" style="background:#febc2e"></div>
+      <div class="p-dot" style="background:#28c840"></div>
+      <span class="panel-title">interval load · tue may 13 2025</span>
+    </div>
+    <div class="panel-body">
+      <div class="mini-chart"><svg id="loadSvg"></svg></div>
+      <div class="chart-labels" id="chartLabels"></div>
+      <div class="metric-list">
+        <div class="metric-row">
+          <span class="metric-lbl">Peak interval</span>
+          <span class="metric-val">14:15 – 14:30</span>
+          <span class="metric-chg" style="color:var(--accent)">847 kW</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-lbl">Daily kWh</span>
+          <span class="metric-val">14,820</span>
+          <span class="metric-chg s-up">↑ 4.1%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-lbl">Cost est.</span>
+          <span class="metric-val">$2,314</span>
+          <span class="metric-chg" style="color:var(--dim)">TOU-EV-8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DARK SECTION: Scale -->
+<div class="dark-section">
+  <div class="dark-inner">
+    <div>
+      <div class="kicker">Built to Scale</div>
+      <h2>From a single meter to a global fleet</h2>
+      <div class="body-copy">
+        <p>EnergyCalendar is designed for organizations where electricity is a <strong>first-order operational variable</strong> — not a line item on a facilities invoice.</p>
+      </div>
+    </div>
+    <div class="pill-grid">
+      <div class="dk-card">
+        <div class="dk-card-n">15 min</div>
+        <div class="dk-card-l">Minimum interval resolution. Sub-5-minute on select integrations.</div>
+      </div>
+      <div class="dk-card">
+        <div class="dk-card-n">100 %</div>
+        <div class="dk-card-l">Calendar coverage across all NERC regions and major tariff structures.</div>
+      </div>
+      <div class="dk-card">
+        <div class="dk-card-n">10+ yr</div>
+        <div class="dk-card-l">Historical depth for benchmarking, trending, and cost normalization.</div>
+      </div>
+      <div class="dk-card">
+        <div class="dk-card-n">API-first</div>
+        <div class="dk-card-l">Every calendar view, metric, and projection accessible programmatically.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTORS -->
+<div class="sectors">
+  <div class="kicker">Use Cases</div>
+  <h2>Electricity is the constraint</h2>
+  <p class="sectors-sub">EnergyCalendar was built for organizations where electricity costs, capacity, and timing are operationally critical.</p>
+  <div class="sector-list">
+    <div class="sector-row">
+      <div class="sector-n">01</div>
+      <div class="sector-body">
+        <h3>Data Centers &amp; Hyperscale</h3>
+        <p>Power usage effectiveness lives and dies by the calendar. Cooling load profiles, PUE by hour and season, capacity headroom against contracted demand — EnergyCalendar structures these across the operational timeline so infrastructure and finance teams are always in sync.</p>
+        <div class="sector-tags">
+          <span class="sector-tag">PUE / WUE</span>
+          <span class="sector-tag">Demand charges</span>
+          <span class="sector-tag">Capacity planning</span>
+          <span class="sector-tag">Carbon intensity by hour</span>
+        </div>
+      </div>
+    </div>
+    <div class="sector-row">
+      <div class="sector-n">02</div>
+      <div class="sector-body">
+        <h3>Large C&amp;I Facilities</h3>
+        <p>Manufacturing plants, campuses, and industrial complexes face electricity costs shaped by tariff seasonality, coincident peak windows, and demand ratchet clauses. EnergyCalendar makes the billing calendar legible — so procurement and operations teams act on it, not after it.</p>
+        <div class="sector-tags">
+          <span class="sector-tag">Demand ratchets</span>
+          <span class="sector-tag">TOU rate optimization</span>
+          <span class="sector-tag">Coincident peak</span>
+          <span class="sector-tag">Annual cost modeling</span>
+        </div>
+      </div>
+    </div>
+    <div class="sector-row">
+      <div class="sector-n">03</div>
+      <div class="sector-body">
+        <h3>Storage &amp; DER Operators</h3>
+        <p>BESS dispatch value depends on calendar precision — the right charge and discharge windows, tied to real-time and forward-looking grid conditions. EnergyCalendar surfaces the temporal structure that makes dispatch decisions defensible.</p>
+        <div class="sector-tags">
+          <span class="sector-tag">Dispatch optimization</span>
+          <span class="sector-tag">Arbitrage windows</span>
+          <span class="sector-tag">Incentive deadlines</span>
+          <span class="sector-tag">Settlement periods</span>
+        </div>
+      </div>
+    </div>
+    <div class="sector-row">
+      <div class="sector-n">04</div>
+      <div class="sector-body">
+        <h3>Energy Finance &amp; Advisory</h3>
+        <p>Underwriting electricity-intensive assets requires a clear view of how costs have moved, when, and why. EnergyCalendar provides the calendar-structured electricity record that makes diligence rigorous and projections grounded.</p>
+        <div class="sector-tags">
+          <span class="sector-tag">Historical benchmarking</span>
+          <span class="sector-tag">Rate case impact</span>
+          <span class="sector-tag">Tariff comparison</span>
+          <span class="sector-tag">Load forecasting</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSING -->
+<div class="closing">
+  <h2>Electricity data, finally in time</h2>
+  <p>EnergyCalendar is in private access. We are working with a focused set of organizations ahead of broader availability.</p>
+  <div class="closing-meta">
+    <div class="closing-badge">
+      <div class="b-dot"></div>
+      Private access underway · Q3 2025
+    </div>
+    <div class="closing-note">Backed by leading infrastructure &amp; technology investors.</div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-l">© 2025 EnergyCalendar, Inc.</div>
+  <div class="footer-r">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* ── MARQUEE DATA ── */
+  var items = [
+    { lbl:'ERCOT · May load',  val:'62.4 GW',   chg:'+1.8%', up:true },
+    { lbl:'PJM · Peak demand', val:'142.1 GW',  chg:'+0.4%', up:true },
+    { lbl:'CAISO · Net load',  val:'23.8 GW',   chg:'-2.1%', up:false },
+    { lbl:'Natural gas',       val:'$2.84/MMBtu',chg:'-0.6%', up:false },
+    { lbl:'ISO-NE · Demand',   val:'18.2 GW',   chg:'+0.9%', up:true },
+    { lbl:'MISO · Avg price',  val:'$38.40/MWh',chg:'+3.2%', up:true },
+    { lbl:'SPP · Wind curtail', val:'4.1%',      chg:'-0.8%', up:false },
+    { lbl:'NYISO · Load',      val:'19.6 GW',   chg:'+1.1%', up:true },
+    { lbl:'Carbon intensity',  val:'382 g/kWh',  chg:'-1.4%', up:false },
+    { lbl:'Avg demand charge', val:'$14.20/kW',  chg:'+0.2%', up:true },
+  ];
+  var track = document.getElementById('track');
+  // duplicate for seamless loop
+  [items, items].forEach(function(set){
+    set.forEach(function(d){
+      var el = document.createElement('div');
+      el.className = 'strip-item';
+      el.innerHTML = d.lbl + ' &nbsp;<span class="s-val">'+d.val+'</span>'
+        +'<span class="s-chg '+(d.up?'s-up':'s-down')+'">'+d.chg+'</span>';
+      track.appendChild(el);
+    });
+  });
+
+  /* ── CALENDAR GRID ── */
+  var days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  var grid = document.getElementById('calGrid');
+  days.forEach(function(d){
+    var h = document.createElement('div');
+    h.className = 'cal-hdr'; h.textContent = d; grid.appendChild(h);
+  });
+  // May 2025 starts on Thursday (offset 4)
+  var offset = 4, total = 31;
+  var levels = [
+    2,2,2,1,1,0,0, // wk1 (1–7, starts Thu)
+    1,1,3,2,2,1,1, // wk2
+    1,2,3,3,2,1,1, // wk3
+    1,2,2,4,3,2,1, // wk4
+    2,3,4           // wk5 partial
+  ];
+  for(var i=0;i<offset;i++){
+    var e=document.createElement('div'); e.className='cal-cell empty'; grid.appendChild(e);
+  }
+  for(var d2=1;d2<=total;d2++){
+    var cell=document.createElement('div');
+    var lv = levels[d2-1]||0;
+    var cls='cal-cell';
+    if(lv===4) cls+=' peak';
+    else if(lv===3) cls+=' high';
+    else if(lv>=1) cls+=' has-data';
+    if(d2===30) cls+=' today';
+    cell.className=cls;
+    cell.textContent=d2;
+    grid.appendChild(cell);
+  }
+
+  /* ── LOAD CURVE SVG ── */
+  var svg = document.getElementById('loadSvg');
+  var W=320, H=80;
+  var loads=[210,195,185,178,182,190,210,290,420,560,670,710,740,790,847,830,800,780,720,650,580,490,380,290,220];
+  var mx=Math.max.apply(null,loads);
+  function px(i){ return (i/(loads.length-1)*W).toFixed(1); }
+  function py(v){ return (H-v/mx*H).toFixed(1); }
+  var d='M'+loads.map(function(v,i){ return px(i)+','+py(v); }).join(' L');
+  var fill='M'+px(0)+','+H+' L'+loads.map(function(v,i){ return px(i)+','+py(v); }).join(' L')+' L'+px(loads.length-1)+','+H+' Z';
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.innerHTML='<defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="#1d4ed8" stop-opacity="0.15"/>'
+    +'<stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>'
+    +'</linearGradient></defs>'
+    +'<path d="'+fill+'" fill="url(#lg)"/>'
+    +'<path d="'+d+'" fill="none" stroke="#1d4ed8" stroke-width="1.8" stroke-linejoin="round"/>'
+    +'<circle cx="'+px(14)+'" cy="'+py(847)+'" r="3.5" fill="#1d4ed8"/>';
+
+  /* ── CHART LABELS ── */
+  var lblEl = document.getElementById('chartLabels');
+  ['00:00','06:00','12:00','18:00','24:00'].forEach(function(t){
+    var s=document.createElement('span'); s.textContent=t; lblEl.appendChild(s);
+  });
+})();
+</script>
 </body>
 </html>
